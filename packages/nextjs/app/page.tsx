@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CheckCircle, ChevronDown, DollarSign, Send, User } from "lucide-react";
 import type { NextPage } from "next";
+import { normalize } from "viem/ens";
+import { usePublicClient } from "wagmi";
+import { mainnet } from "wagmi/chains";
 
 type Token = "USDT" | "USDC" | "DAI" | "GHO" | "PYUSD";
 type Chain = "Base" | "Arbitrum";
@@ -14,9 +17,59 @@ const Home: NextPage = () => {
   const [selectedChain, setSelectedChain] = useState<Chain>("Base");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [isResolvingENS, setIsResolvingENS] = useState(false);
+  const [ensError, setEnsError] = useState<string | null>(null);
 
+  const publicClient = usePublicClient({ chainId: mainnet.id });
   const tokens: Token[] = ["USDT", "USDC", "DAI", "GHO", "PYUSD"];
   const chains: Chain[] = ["Base", "Arbitrum"];
+
+  // ENS Resolution Effect
+  useEffect(() => {
+    const resolveENS = async () => {
+      if (!recipient) {
+        setResolvedAddress(null);
+        setEnsError(null);
+        return;
+      }
+
+      // Check if it's an ENS name (ends with .eth)
+      if (recipient.endsWith(".eth")) {
+        setIsResolvingENS(true);
+        setEnsError(null);
+        try {
+          const address = await publicClient?.getEnsAddress({
+            name: normalize(recipient),
+          });
+          if (address) {
+            setResolvedAddress(address);
+            setEnsError(null);
+          } else {
+            setResolvedAddress(null);
+            setEnsError("ENS name not found");
+          }
+        } catch (error) {
+          console.error("ENS resolution error:", error);
+          setResolvedAddress(null);
+          setEnsError("Failed to resolve ENS name");
+        } finally {
+          setIsResolvingENS(false);
+        }
+      } else if (recipient.startsWith("0x")) {
+        // It's already an address
+        setResolvedAddress(null);
+        setEnsError(null);
+      } else {
+        // Invalid format
+        setResolvedAddress(null);
+        setEnsError(null);
+      }
+    };
+
+    const timeoutId = setTimeout(resolveENS, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [recipient, publicClient]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +191,24 @@ const Home: NextPage = () => {
                   className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   disabled={sending || sent}
                 />
+                {isResolvingENS && (
+                  <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                    <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
+              {/* ENS Resolution Display */}
+              {resolvedAddress && (
+                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-xs text-emerald-400 mb-1">✓ ENS Resolved</p>
+                  <p className="text-xs text-slate-300 font-mono break-all">{resolvedAddress}</p>
+                </div>
+              )}
+              {ensError && (
+                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-xs text-red-400">✗ {ensError}</p>
+                </div>
+              )}
             </div>
 
             {/* Send Button */}
@@ -188,8 +258,16 @@ const Home: NextPage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>To</span>
-                  <span className="font-mono text-xs text-white truncate ml-4 max-w-[200px]">{recipient}</span>
+                  <span className="font-mono text-xs text-white truncate ml-4 max-w-[200px]">
+                    {resolvedAddress || recipient}
+                  </span>
                 </div>
+                {resolvedAddress && recipient.endsWith(".eth") && (
+                  <div className="flex justify-between">
+                    <span>ENS Name</span>
+                    <span className="text-xs text-emerald-400">{recipient}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
