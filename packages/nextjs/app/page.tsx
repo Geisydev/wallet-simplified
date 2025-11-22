@@ -1,14 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle, DollarSign, Send, User } from "lucide-react";
+import { CheckCircle, ChevronDown, DollarSign, Send, User } from "lucide-react";
 import type { NextPage } from "next";
+
+type Token = "USDT" | "USDC" | "DAI" | "GHO" | "PYUSD";
+type Chain = "Base" | "Arbitrum";
 
 const Home: NextPage = () => {
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
+  const [selectedToken, setSelectedToken] = useState<Token>("USDT");
+  const [selectedChain, setSelectedChain] = useState<Chain>("Base");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const tokens: Token[] = ["USDT", "USDC", "DAI", "GHO", "PYUSD"];
+  const chains: Chain[] = ["Base", "Arbitrum"];
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,13 +49,57 @@ const Home: NextPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500 rounded-full mb-4">
             <Send className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Send USDT</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Send Crypto</h1>
           <p className="text-slate-300">Fast, secure blockchain transfers</p>
         </div>
 
         {/* Send Form Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
           <form onSubmit={handleSend} className="space-y-6">
+            {/* Chain Selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Network</label>
+              <div className="relative">
+                <select
+                  value={selectedChain}
+                  onChange={e => setSelectedChain(e.target.value as Chain)}
+                  className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none cursor-pointer"
+                  disabled={sending || sent}
+                >
+                  {chains.map(chain => (
+                    <option key={chain} value={chain} className="bg-slate-800">
+                      {chain}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="w-5 h-5 text-slate-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Token Selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Token</label>
+              <div className="relative">
+                <select
+                  value={selectedToken}
+                  onChange={e => setSelectedToken(e.target.value as Token)}
+                  className="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none cursor-pointer"
+                  disabled={sending || sent}
+                >
+                  {tokens.map(token => (
+                    <option key={token} value={token} className="bg-slate-800">
+                      {token}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="w-5 h-5 text-slate-400" />
+                </div>
+              </div>
+            </div>
+
             {/* Amount Input */}
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-2">Amount</label>
@@ -66,7 +118,7 @@ const Home: NextPage = () => {
                   disabled={sending || sent}
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <span className="text-slate-300 font-medium">USDT</span>
+                  <span className="text-slate-300 font-medium">{selectedToken}</span>
                 </div>
               </div>
             </div>
@@ -82,7 +134,7 @@ const Home: NextPage = () => {
                   type="text"
                   value={recipient}
                   onChange={e => setRecipient(e.target.value)}
-                  placeholder="Wallet address or username"
+                  placeholder="Wallet address or ens name"
                   className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   disabled={sending || sent}
                 />
@@ -114,7 +166,7 @@ const Home: NextPage = () => {
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  Send USDT
+                  Send {selectedToken}
                 </>
               )}
             </button>
@@ -125,8 +177,14 @@ const Home: NextPage = () => {
             <div className="mt-6 pt-6 border-t border-white/10">
               <div className="text-sm text-slate-300 space-y-2">
                 <div className="flex justify-between">
+                  <span>Network</span>
+                  <span className="font-semibold text-white">{selectedChain}</span>
+                </div>
+                <div className="flex justify-between">
                   <span>You&apos;re sending</span>
-                  <span className="font-semibold text-white">{amount} USDT</span>
+                  <span className="font-semibold text-white">
+                    {amount} {selectedToken}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>To</span>
