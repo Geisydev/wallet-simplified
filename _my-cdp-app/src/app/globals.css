@@ -66,7 +66,7 @@ body {
 
 body,
 .root,
-.root > div,
+.root>div,
 .flex-col-container {
   display: flex;
   flex-direction: column;
@@ -103,7 +103,7 @@ body,
   width: 100%;
 }
 
-.root > div {
+.root>div {
   flex-grow: 1;
 }
 
@@ -182,7 +182,7 @@ header .wallet-address {
   width: 100%;
 }
 
-.main-inner > .card {
+.main-inner>.card {
   width: 100%;
 }
 
@@ -385,4 +385,18 @@ header .wallet-address {
   :root {
     --cdp-base-font-size: 20px;
   }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
