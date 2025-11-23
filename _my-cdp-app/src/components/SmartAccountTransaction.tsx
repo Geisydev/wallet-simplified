@@ -68,7 +68,7 @@ export default function SmartAccountTransaction(props: Props) {
     <>
       {balance === undefined && (
         <>
-          <h2 className="card-title">Send a gasless transaction</h2>
+          <h2 className="card-title" style={{ textAlign: 'center' }}>Send a gasless transaction</h2>
           <LoadingSkeleton className="loading--text" />
           <LoadingSkeleton className="loading--btn" />
         </>
@@ -86,7 +86,7 @@ export default function SmartAccountTransaction(props: Props) {
           )}
           {!hasError && !isSuccess && !isLoading && (
             <>
-              <h2 className="card-title">Send a gasless transaction</h2>
+              <h2 className="card-title" style={{ textAlign: 'center' }}>Send a gasless transaction</h2>
               {hasBalance && smartAccount && (
                 <>
                   <p>Send 0.000001 ETH to yourself on Base Sepolia with no gas fees!</p>
@@ -94,13 +94,15 @@ export default function SmartAccountTransaction(props: Props) {
                     ✨ <strong>Smart Account Benefits:</strong> No gas fees, better UX, and enhanced
                     security
                   </p>
-                  <Button
-                    className="tx-button"
-                    onClick={handleSendUserOperation}
-                    disabled={isLoading}
-                  >
-                    Send Gasless Transaction
-                  </Button>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Button
+                      className="tx-button"
+                      onClick={handleSendUserOperation}
+                      disabled={isLoading}
+                    >
+                      Send Gasless Transaction
+                    </Button>
+                  </div>
                 </>
               )}
               {!hasBalance && (
