@@ -34,8 +34,8 @@ export default function Header() {
     <header>
       <div className="header-inner">
         <div className="title-container">
-          <h1 className="site-title">CDP Next.js StarterKit</h1>
-          <span className="smart-badge">SMART</span>
+          <h1 className="site-title">Wealth$table</h1>
+          {/* <span className="smart-badge">SMART</span> */}
         </div>
         <div className="user-info flex-row-container">
           {evmAddress && (
