@@ -1,16 +1,72 @@
 "use client";
 
-import { useEvmAddress, useIsSignedIn } from "@coinbase/cdp-hooks";
+import { useCurrentUser, useEvmAddress, useIsSignedIn, useSendUserOperation } from "@coinbase/cdp-hooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPublicClient, http, formatEther, isAddress } from "viem";
+import { createPublicClient, http, formatEther, isAddress, encodeFunctionData, parseUnits } from "viem";
 import { normalize } from "viem/ens";
-import { baseSepolia, mainnet } from "viem/chains";
+import { baseSepolia, mainnet, base } from "viem/chains";
+import { useMultiNetworkAccounts } from "@/hooks/useMultiNetworkAccounts";
 
 import Header from "./Header";
 import SmartAccountTransaction from "./SmartAccountTransaction";
 import TokenTransfer from "./TokenTransfer";
 import SendAllETH from "./SendAllETH";
 import UserBalance from "./UserBalance";
+import AccountDebug from "./AccountDebug";
+
+type NetworkType = "base" | "base-sepolia";
+
+// Token configurations by network
+const TOKENS_BY_NETWORK = {
+  "base": {
+    USDC: {
+      name: "USDC",
+      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT",
+      address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as `0x${string}`,
+      decimals: 6,
+    },
+    GHO: {
+      name: "GHO",
+      address: "0x88b1Cd4b430D95b406E382C3cDBaE54697a0286E" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+  "base-sepolia": {
+    USDC: {
+      name: "USDC",
+      address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 6,
+    },
+    GHO: {
+      name: "GHO",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+};
+
+// ERC20 ABI for transfer
+const ERC20_ABI = [
+  {
+    name: "transfer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
 
 /**
  * Create a viem client to access user's balance on the Base Sepolia network
@@ -34,10 +90,24 @@ const mainnetClient = createPublicClient({
 export default function SignedInScreen() {
   const { isSignedIn } = useIsSignedIn();
   const { evmAddress } = useEvmAddress();
+  const { currentUser } = useCurrentUser();
+  const { sendUserOperation, data: txData, error: txError, status: txStatus } = useSendUserOperation();
+
+  // Initialize multi-network accounts
+  const { smartAccount, accounts, initialized } = useMultiNetworkAccounts();
+
   const [balance, setBalance] = useState<bigint | undefined>(undefined);
   const [recipientInput, setRecipientInput] = useState<string>("");
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [isResolvingEns, setIsResolvingEns] = useState(false);
+
+  // Send Crypto widget state
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>("base-sepolia");
+  const [selectedToken, setSelectedToken] = useState<string>("USDC");
+  const [sendAmount, setSendAmount] = useState<string>("");
+  const [sendErrorMessage, setSendErrorMessage] = useState<string>("");
+
+  const TOKENS = TOKENS_BY_NETWORK[selectedNetwork];
 
   const formattedBalance = useMemo(() => {
     if (balance === undefined) return undefined;
@@ -102,6 +172,57 @@ export default function SignedInScreen() {
 
     return () => clearTimeout(timeoutId);
   }, [recipientInput, resolveEnsName]);
+
+  // Handle token send
+  const handleSendToken = async () => {
+    if (!smartAccount || !resolvedAddress || !sendAmount) {
+      setSendErrorMessage("Please fill in all fields and enter a valid recipient");
+      return;
+    }
+
+    const token = TOKENS[selectedToken as keyof typeof TOKENS];
+    if (!token || token.address === "0x0000000000000000000000000000000000000000") {
+      setSendErrorMessage("Selected token is not available on this network");
+      return;
+    }
+
+    try {
+      setSendErrorMessage("");
+
+      const amountInWei = parseUnits(sendAmount, token.decimals);
+
+      // Encode the ERC20 transfer function call
+      const transferData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: "transfer",
+        args: [resolvedAddress as `0x${string}`, amountInWei],
+      });
+
+      await sendUserOperation({
+        evmSmartAccount: smartAccount,
+        network: selectedNetwork,
+        calls: [
+          {
+            to: token.address,
+            value: 0n,
+            data: transferData,
+          },
+        ],
+        useCdpPaymaster: true, // Use gas sponsorship
+      });
+
+      // Reset form on success
+      setSendAmount("");
+      setRecipientInput("");
+      setResolvedAddress(null);
+    } catch (err) {
+      setSendErrorMessage(err instanceof Error ? err.message : "Transaction failed");
+      console.error("Error sending token:", err);
+    }
+  };
+
+  const isSending = txStatus === "pending";
+  const isSendSuccess = txStatus === "success" && txData;
 
   return (
     <>
@@ -229,6 +350,12 @@ export default function SignedInScreen() {
                   Network
                 </label>
                 <select
+                  value={selectedNetwork}
+                  onChange={(e) => {
+                    setSelectedNetwork(e.target.value as NetworkType);
+                    setSelectedToken("USDC");
+                  }}
+                  disabled={isSending}
                   style={{
                     width: '100%',
                     padding: '0.875rem',
@@ -243,7 +370,6 @@ export default function SignedInScreen() {
                   }}
                 >
                   <option value="base-sepolia">Base Sepolia</option>
-                  <option value="ethereum">Ethereum</option>
                   <option value="base">Base</option>
                 </select>
               </div>
@@ -260,6 +386,9 @@ export default function SignedInScreen() {
                   Token
                 </label>
                 <select
+                  value={selectedToken}
+                  onChange={(e) => setSelectedToken(e.target.value)}
+                  disabled={isSending}
                   style={{
                     width: '100%',
                     padding: '0.875rem',
@@ -273,9 +402,14 @@ export default function SignedInScreen() {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="eth">ETH</option>
-                  <option value="usdc">USDC</option>
-                  <option value="dai">DAI</option>
+                  {Object.entries(TOKENS).map(([key, token]) => {
+                    const isDisabled = token.address === "0x0000000000000000000000000000000000000000";
+                    return (
+                      <option key={key} value={key} disabled={isDisabled}>
+                        {token.name} {isDisabled ? "(Not available)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -291,22 +425,16 @@ export default function SignedInScreen() {
                   Amount
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{
-                    position: 'absolute',
-                    left: '1rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#10b981',
-                    fontSize: '1.25rem',
-                    fontWeight: '600'
-                  }}>$</span>
                   <input
                     type="number"
                     placeholder="0.00"
-                    step="0.01"
+                    step="any"
+                    value={sendAmount}
+                    onChange={(e) => setSendAmount(e.target.value)}
+                    disabled={isSending}
                     style={{
                       width: '100%',
-                      padding: '0.875rem 0.875rem 0.875rem 2.5rem',
+                      padding: '0.875rem 4rem 0.875rem 0.875rem',
                       fontSize: '1rem',
                       border: '2px solid #e5e7eb',
                       borderRadius: '12px',
@@ -325,7 +453,7 @@ export default function SignedInScreen() {
                     color: '#6b7280',
                     fontSize: '1rem',
                     fontWeight: '600'
-                  }}>USDT</span>
+                  }}>{selectedToken}</span>
                 </div>
               </div>
 
@@ -439,40 +567,95 @@ export default function SignedInScreen() {
                 )}
               </div>
 
+              {/* Error/Success Messages */}
+              {sendErrorMessage && (
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  color: '#991b1b'
+                }}>
+                  {sendErrorMessage}
+                </div>
+              )}
+
+              {isSendSuccess && txData && (
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #86efac',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  color: '#166534'
+                }}>
+                  ✅ Transaction successful!{' '}
+                  <a
+                    href={`${selectedNetwork === "base" ? "https://basescan.org" : "https://sepolia.basescan.org"}/tx/${txData.transactionHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'underline' }}
+                  >
+                    View on Explorer
+                  </a>
+                </div>
+              )}
+
               {/* Send Button */}
               <button
+                onClick={handleSendToken}
+                disabled={isSending || !resolvedAddress || !sendAmount || !smartAccount}
                 style={{
                   width: '100%',
                   padding: '1rem',
                   fontSize: '1.125rem',
                   fontWeight: '600',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: isSending || !resolvedAddress || !sendAmount || !smartAccount
+                    ? '#d1d5db'
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
-                  cursor: 'pointer',
+                  cursor: isSending || !resolvedAddress || !sendAmount || !smartAccount
+                    ? 'not-allowed'
+                    : 'pointer',
                   marginTop: '0.5rem',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+                  opacity: isSending || !resolvedAddress || !sendAmount || !smartAccount ? 0.6 : 1
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+                  if (!isSending && resolvedAddress && sendAmount && smartAccount) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-                Send USDT
+                {isSending ? (
+                  <>
+                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    Send {selectedToken}
+                  </>
+                )}
               </button>
             </div>
 
@@ -536,6 +719,9 @@ export default function SignedInScreen() {
           </div>
         </div>
       </main>
+
+      {/* Debug component - remove in production */}
+      <AccountDebug />
     </>
   );
 }
