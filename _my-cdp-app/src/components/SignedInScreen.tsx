@@ -62,11 +62,11 @@ export default function SignedInScreen() {
           {/* Top section - Balance and Yield */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '1rem',
             width: '100%'
           }}>
-            {/* Balance */}
+            {/* ETH Balance */}
             <div style={{
               background: 'white',
               borderRadius: '20px',
@@ -75,13 +75,33 @@ export default function SignedInScreen() {
               border: '1px solid #e5e7eb'
             }}>
               <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>
-                Available Balance
+                ETH Balance
               </h3>
               <p style={{ margin: '0 0 0.25rem 0', fontSize: '2rem', fontWeight: 'bold', color: '#111827' }}>
                 {formattedBalance === undefined ? '...' : `${parseFloat(formattedBalance).toFixed(4)} ETH`}
               </p>
               <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>
                 {/* TODO: Add USD value */}
+                ≈ $0.00 USD
+              </p>
+            </div>
+
+            {/* Stablecoin Balance */}
+            <div style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              border: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>
+                Stablecoin Balance
+              </h3>
+              <p style={{ margin: '0 0 0.25rem 0', fontSize: '2rem', fontWeight: 'bold', color: '#111827' }}>
+                0.00 USDC
+              </p>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>
+                {/* TODO: Add actual stablecoin balance */}
                 ≈ $0.00 USD
               </p>
             </div>
