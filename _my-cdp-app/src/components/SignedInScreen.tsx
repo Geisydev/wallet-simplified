@@ -2,8 +2,9 @@
 
 import { useEvmAddress, useIsSignedIn } from "@coinbase/cdp-hooks";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPublicClient, http, formatEther } from "viem";
-import { baseSepolia } from "viem/chains";
+import { createPublicClient, http, formatEther, isAddress } from "viem";
+import { normalize } from "viem/ens";
+import { baseSepolia, mainnet } from "viem/chains";
 
 import Header from "./Header";
 import SmartAccountTransaction from "./SmartAccountTransaction";
@@ -18,12 +19,23 @@ const client = createPublicClient({
 });
 
 /**
+ * Create a mainnet client for ENS resolution
+ */
+const mainnetClient = createPublicClient({
+  chain: mainnet,
+  transport: http(),
+});
+
+/**
  * The Signed In screen
  */
 export default function SignedInScreen() {
   const { isSignedIn } = useIsSignedIn();
   const { evmAddress } = useEvmAddress();
   const [balance, setBalance] = useState<bigint | undefined>(undefined);
+  const [recipientInput, setRecipientInput] = useState<string>("");
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [isResolvingEns, setIsResolvingEns] = useState(false);
 
   const formattedBalance = useMemo(() => {
     if (balance === undefined) return undefined;
@@ -43,6 +55,51 @@ export default function SignedInScreen() {
     const interval = setInterval(getBalance, 500);
     return () => clearInterval(interval);
   }, [getBalance]);
+
+  // ENS Resolution
+  const resolveEnsName = useCallback(async (input: string) => {
+    const trimmedInput = input.trim();
+
+    // If empty, reset
+    if (!trimmedInput) {
+      setResolvedAddress(null);
+      return;
+    }
+
+    // If it's already a valid address, use it directly
+    if (isAddress(trimmedInput)) {
+      setResolvedAddress(trimmedInput);
+      return;
+    }
+
+    // Check if it looks like an ENS name (contains .eth or other TLD)
+    if (trimmedInput.includes('.')) {
+      setIsResolvingEns(true);
+      try {
+        const normalizedName = normalize(trimmedInput);
+        const address = await mainnetClient.getEnsAddress({
+          name: normalizedName,
+        });
+        setResolvedAddress(address);
+      } catch (error) {
+        console.error('ENS resolution failed:', error);
+        setResolvedAddress(null);
+      } finally {
+        setIsResolvingEns(false);
+      }
+    } else {
+      setResolvedAddress(null);
+    }
+  }, []);
+
+  // Debounce ENS resolution
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      resolveEnsName(recipientInput);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [recipientInput, resolveEnsName]);
 
   return (
     <>
@@ -304,12 +361,14 @@ export default function SignedInScreen() {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Wallet address or username"
+                    placeholder="Wallet address or ENS name"
+                    value={recipientInput}
+                    onChange={(e) => setRecipientInput(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '0.875rem 0.875rem 0.875rem 3rem',
                       fontSize: '1rem',
-                      border: '2px solid #e5e7eb',
+                      border: `2px solid ${resolvedAddress ? '#10b981' : '#e5e7eb'}`,
                       borderRadius: '12px',
                       backgroundColor: 'white',
                       color: '#111827',
@@ -318,7 +377,64 @@ export default function SignedInScreen() {
                       boxSizing: 'border-box'
                     }}
                   />
+                  {isResolvingEns && (
+                    <div style={{
+                      position: 'absolute',
+                      right: '1rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#6b7280'
+                    }}>
+                      <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
+                {resolvedAddress && recipientInput.includes('.') && (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    padding: '0.75rem',
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #86efac',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    color: '#166534',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span style={{ fontWeight: '500' }}>Resolved:</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                      {resolvedAddress.slice(0, 6)}...{resolvedAddress.slice(-4)}
+                    </span>
+                  </div>
+                )}
+                {recipientInput && !isResolvingEns && !resolvedAddress && recipientInput.includes('.') && (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    padding: '0.75rem',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fca5a5',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    color: '#991b1b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>ENS name not found</span>
+                  </div>
+                )}
               </div>
 
               {/* Send Button */}
