@@ -17,8 +17,8 @@ const rethinkSans = Rethink_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "CDP Next.js StarterKit",
-  description: "The CDP Next.js StarterKit",
+  title: "Wealth$table",
+  description: "Super simple stablecoin wallet",
 };
 
 /**

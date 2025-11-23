@@ -4,24 +4,47 @@ import { useCurrentUser, useSendUserOperation } from "@coinbase/cdp-hooks";
 import { Button } from "@coinbase/cdp-react/components/ui/Button";
 import { useState, useEffect } from "react";
 import { encodeFunctionData, formatUnits, parseUnits, createPublicClient, http } from "viem";
-import { base } from "viem/chains";
+import { base, baseSepolia } from "viem/chains";
 
-// Token configurations
-const TOKENS = {
-  USDC: {
-    name: "USDC",
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
-    decimals: 6,
+type NetworkType = "base" | "base-sepolia";
+
+// Token configurations by network
+const TOKENS_BY_NETWORK = {
+  "base": {
+    USDC: {
+      name: "USDC",
+      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT",
+      address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as `0x${string}`,
+      decimals: 6,
+    },
+    GHO: {
+      name: "GHO",
+      address: "0x88b1Cd4b430D95b406E382C3cDBaE54697a0286E" as `0x${string}`,
+      decimals: 18,
+    },
   },
-  USDT: {
-    name: "USDT",
-    address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as `0x${string}`,
-    decimals: 6,
-  },
-  GHO: {
-    name: "GHO",
-    address: "0x88b1Cd4b430D95b406E382C3cDBaE54697a0286E" as `0x${string}`,
-    decimals: 18,
+  "base-sepolia": {
+    USDC: {
+      name: "USDC",
+      address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as `0x${string}`,
+      decimals: 6,
+    },
+    // Note: These are placeholder addresses for Base Sepolia
+    // You may need to deploy or find actual testnet tokens
+    USDT: {
+      name: "USDT (Test)",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 6,
+    },
+    DAI: {
+      name: "DAI (Test)",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 18,
+    },
   },
 };
 
@@ -50,7 +73,8 @@ export default function TokenTransfer() {
   const { currentUser } = useCurrentUser();
   const { sendUserOperation, data, error, status } = useSendUserOperation();
 
-  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKENS>("USDC");
+  const [network, setNetwork] = useState<NetworkType>("base-sepolia");
+  const [selectedToken, setSelectedToken] = useState<string>("USDC");
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [balances, setBalances] = useState<Record<string, string>>({});
@@ -58,7 +82,7 @@ export default function TokenTransfer() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const smartAccount = currentUser?.evmSmartAccounts?.[0];
-  const network = "base"; // Using Base mainnet
+  const TOKENS = TOKENS_BY_NETWORK[network];
 
   // Fetch token balances
   useEffect(() => {
@@ -68,11 +92,16 @@ export default function TokenTransfer() {
       try {
         setLoadingBalances(true);
         const publicClient = createPublicClient({
-          chain: base,
+          chain: network === "base" ? base : baseSepolia,
           transport: http(),
         });
 
         const balancePromises = Object.entries(TOKENS).map(async ([key, token]) => {
+          // Skip zero address tokens
+          if (token.address === "0x0000000000000000000000000000000000000000") {
+            return [key, "0"];
+          }
+
           const balance = await publicClient.readContract({
             address: token.address,
             abi: ERC20_ABI,
@@ -94,7 +123,7 @@ export default function TokenTransfer() {
     };
 
     fetchBalances();
-  }, [smartAccount]);
+  }, [smartAccount, network, TOKENS]);
 
   const handleSendToken = async () => {
     if (!smartAccount || !recipient || !amount) {
@@ -139,10 +168,14 @@ export default function TokenTransfer() {
         const fetchBalances = async () => {
           if (!smartAccount) return;
           const publicClient = createPublicClient({
-            chain: base,
+            chain: network === "base" ? base : baseSepolia,
             transport: http(),
           });
           const balancePromises = Object.entries(TOKENS).map(async ([key, token]) => {
+            // Skip zero address tokens
+            if (token.address === "0x0000000000000000000000000000000000000000") {
+              return [key, "0"];
+            }
             const balance = await publicClient.readContract({
               address: token.address,
               abi: ERC20_ABI,
@@ -217,11 +250,11 @@ export default function TokenTransfer() {
           </p>
           <p>
             <a
-              href={`https://basescan.org/tx/${data.transactionHash}`}
+              href={`${network === "base" ? "https://basescan.org" : "https://sepolia.basescan.org"}/tx/${data.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              View on BaseScan
+              View on {network === "base" ? "BaseScan" : "BaseScan Sepolia"}
             </a>
           </p>
         </div>
@@ -230,18 +263,36 @@ export default function TokenTransfer() {
       {/* Transfer Form */}
       {!isSuccess && (
         <div className="transfer-form">
+          {/* Network Selection */}
+          <div className="form-group">
+            <label htmlFor="network-select">Network:</label>
+            <select
+              id="network-select"
+              value={network}
+              onChange={(e) => {
+                setNetwork(e.target.value as NetworkType);
+                setBalances({});
+                setSelectedToken("USDC");
+              }}
+              disabled={isLoading}
+            >
+              <option value="base-sepolia">Base Sepolia (Testnet)</option>
+              <option value="base">Base (Mainnet)</option>
+            </select>
+          </div>
+
           {/* Token Selection */}
           <div className="form-group">
             <label htmlFor="token-select">Select Token:</label>
             <select
               id="token-select"
               value={selectedToken}
-              onChange={(e) => setSelectedToken(e.target.value as keyof typeof TOKENS)}
+              onChange={(e) => setSelectedToken(e.target.value)}
               disabled={isLoading}
             >
               {Object.keys(TOKENS).map((key) => (
                 <option key={key} value={key}>
-                  {key}
+                  {TOKENS[key as keyof typeof TOKENS].name}
                 </option>
               ))}
             </select>

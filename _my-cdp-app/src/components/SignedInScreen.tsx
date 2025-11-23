@@ -8,6 +8,7 @@ import { baseSepolia } from "viem/chains";
 import Header from "./Header";
 import SmartAccountTransaction from "./SmartAccountTransaction";
 import TokenTransfer from "./TokenTransfer";
+import SendAllETH from "./SendAllETH";
 import UserBalance from "./UserBalance";
 
 /**
@@ -391,6 +392,9 @@ export default function SignedInScreen() {
               <SmartAccountTransaction balance={formattedBalance} onSuccess={getBalance} />
             )}
           </div>
+          {isSignedIn && evmAddress && (
+            <SendAllETH balance={formattedBalance} onSuccess={getBalance} />
+          )}
           <div className="card card--token-transfer">
             {isSignedIn && evmAddress && <TokenTransfer />}
           </div>
