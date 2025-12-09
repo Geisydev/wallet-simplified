@@ -48,7 +48,9 @@ export default function AccountDebug() {
         <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
           <p style={{ margin: '0', fontSize: '0.75rem', color: '#1e40af', lineHeight: '1.4' }}>
             <strong>ℹ️ Multi-Network Support:</strong><br />
-            This smart account works on both <strong>Base Sepolia</strong> and <strong>Base</strong> mainnet.<br />
+            This smart account works on:<br />
+            • <strong>Base</strong> + Base Sepolia<br />
+            • <strong>Arbitrum</strong> + Arbitrum Sepolia<br />
             Same address, different networks!
           </p>
         </div>
