@@ -4,9 +4,9 @@ import { useCurrentUser, useSendUserOperation } from "@coinbase/cdp-hooks";
 import { Button } from "@coinbase/cdp-react/components/ui/Button";
 import { useState, useEffect } from "react";
 import { encodeFunctionData, formatUnits, parseUnits, createPublicClient, http } from "viem";
-import { base, baseSepolia } from "viem/chains";
+import { base, baseSepolia, arbitrum, arbitrumSepolia } from "viem/chains";
 
-type NetworkType = "base" | "base-sepolia";
+type NetworkType = "base" | "base-sepolia" | "arbitrum" | "arbitrum-sepolia";
 
 // Token configurations by network
 const TOKENS_BY_NETWORK = {
@@ -33,8 +33,6 @@ const TOKENS_BY_NETWORK = {
       address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as `0x${string}`,
       decimals: 6,
     },
-    // Note: These are placeholder addresses for Base Sepolia
-    // You may need to deploy or find actual testnet tokens
     USDT: {
       name: "USDT (Test)",
       address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
@@ -42,6 +40,40 @@ const TOKENS_BY_NETWORK = {
     },
     DAI: {
       name: "DAI (Test)",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+  "arbitrum": {
+    USDC: {
+      name: "USDC",
+      address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT",
+      address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" as `0x${string}`,
+      decimals: 6,
+    },
+    ARB: {
+      name: "ARB",
+      address: "0x912CE59144191C1204E64559FE8253a0e49E6548" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+  "arbitrum-sepolia": {
+    USDC: {
+      name: "USDC (Test)",
+      address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT (Test)",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 6,
+    },
+    ARB: {
+      name: "ARB (Test)",
       address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
       decimals: 18,
     },
@@ -92,7 +124,11 @@ export default function TokenTransfer() {
       try {
         setLoadingBalances(true);
         const publicClient = createPublicClient({
-          chain: network === "base" ? base : baseSepolia,
+          chain:
+            network === "base" ? base :
+            network === "base-sepolia" ? baseSepolia :
+            network === "arbitrum" ? arbitrum :
+            arbitrumSepolia,
           transport: http(),
         });
 
@@ -168,7 +204,11 @@ export default function TokenTransfer() {
         const fetchBalances = async () => {
           if (!smartAccount) return;
           const publicClient = createPublicClient({
-            chain: network === "base" ? base : baseSepolia,
+            chain:
+              network === "base" ? base :
+              network === "base-sepolia" ? baseSepolia :
+              network === "arbitrum" ? arbitrum :
+              arbitrumSepolia,
             transport: http(),
           });
           const balancePromises = Object.entries(TOKENS).map(async ([key, token]) => {
@@ -250,11 +290,19 @@ export default function TokenTransfer() {
           </p>
           <p>
             <a
-              href={`${network === "base" ? "https://basescan.org" : "https://sepolia.basescan.org"}/tx/${data.transactionHash}`}
+              href={`${
+                network === "base"
+                  ? "https://basescan.org"
+                  : network === "base-sepolia"
+                  ? "https://sepolia.basescan.org"
+                  : network === "arbitrum"
+                  ? "https://arbiscan.io"
+                  : "https://sepolia.arbiscan.io"
+              }/tx/${data.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              View on {network === "base" ? "BaseScan" : "BaseScan Sepolia"}
+              View on Explorer
             </a>
           </p>
         </div>
@@ -278,6 +326,8 @@ export default function TokenTransfer() {
             >
               <option value="base-sepolia">Base Sepolia (Testnet)</option>
               <option value="base">Base (Mainnet)</option>
+              <option value="arbitrum-sepolia">Arbitrum Sepolia (Testnet)</option>
+              <option value="arbitrum">Arbitrum (Mainnet)</option>
             </select>
           </div>
 
