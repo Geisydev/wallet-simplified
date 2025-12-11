@@ -12,14 +12,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "15.4.8",
+    "@coinbase/cdp-core": "latest",
+    "@coinbase/cdp-hooks": "latest",
+    "@coinbase/cdp-react": "latest",
+    "buffer": "^6.0.3",
+    "next": "^15.5.7",
     "react": "~19.1.0",
     "react-dom": "~19.1.0",
-    "@coinbase/cdp-react": "latest",
-    "@coinbase/cdp-hooks": "latest",
-    "@coinbase/cdp-core": "latest",
-    "viem": "^2.8.6",
-    "buffer": "^6.0.3"
+    "styled-components": "^6.1.19",
+    "viem": "^2.8.6"
   },
   "devDependencies": {
     "@types/node": "^20",

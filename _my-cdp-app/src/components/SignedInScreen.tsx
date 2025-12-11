@@ -7,7 +7,6 @@ import { normalize } from "viem/ens";
 import { baseSepolia, mainnet, base, arbitrum, arbitrumSepolia } from "viem/chains";
 import { useMultiNetworkAccounts } from "@/hooks/useMultiNetworkAccounts";
 
-import Header from "./Header";
 import SmartAccountTransaction from "./SmartAccountTransaction";
 import TokenTransfer from "./TokenTransfer";
 import SendAllETH from "./SendAllETH";
@@ -260,8 +259,6 @@ export default function SignedInScreen() {
 
   return (
     <>
-      <Header />
-
       <main className="main flex-col-container flex-grow" style={{ backgroundColor: '#f9fafb' }}>
         <div style={{
           display: 'flex',

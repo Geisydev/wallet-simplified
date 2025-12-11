@@ -1,5 +1,6 @@
 "use client";
 import ClientApp from "@/components/ClientApp";
+import Header from "@/components/Header";
 import Providers from "@/components/Providers";
 
 /**
@@ -10,6 +11,7 @@ import Providers from "@/components/Providers";
 export default function Home() {
   return (
     <Providers>
+      <Header />
       <ClientApp />
     </Providers>
   );
