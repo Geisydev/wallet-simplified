@@ -5,7 +5,7 @@ import { Button } from "@coinbase/cdp-react/components/ui/Button";
 import { useState } from "react";
 import { parseEther } from "viem";
 
-type NetworkType = "base" | "base-sepolia";
+type NetworkType = "base" | "base-sepolia" | "arbitrum" | "arbitrum-sepolia";
 
 interface Props {
   balance?: string;
@@ -144,12 +144,20 @@ export default function SendAllETH({ balance, onSuccess }: Props) {
           </p>
           <p style={{ margin: 0, fontSize: '0.875rem' }}>
             <a
-              href={`${network === "base" ? "https://basescan.org" : "https://sepolia.basescan.org"}/tx/${data.transactionHash}`}
+              href={`${
+                network === "base"
+                  ? "https://basescan.org"
+                  : network === "base-sepolia"
+                  ? "https://sepolia.basescan.org"
+                  : network === "arbitrum"
+                  ? "https://arbiscan.io"
+                  : "https://sepolia.arbiscan.io"
+              }/tx/${data.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: '#2563eb', textDecoration: 'underline' }}
             >
-              View on {network === "base" ? "BaseScan" : "BaseScan Sepolia"}
+              View on Explorer
             </a>
           </p>
         </div>
@@ -189,6 +197,8 @@ export default function SendAllETH({ balance, onSuccess }: Props) {
             >
               <option value="base-sepolia">Base Sepolia (Testnet)</option>
               <option value="base">Base (Mainnet)</option>
+              <option value="arbitrum-sepolia">Arbitrum Sepolia (Testnet)</option>
+              <option value="arbitrum">Arbitrum (Mainnet)</option>
             </select>
           </div>
 

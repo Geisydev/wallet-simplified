@@ -4,7 +4,7 @@ import { useCurrentUser, useEvmAddress, useIsSignedIn, useSendUserOperation } fr
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPublicClient, http, formatEther, isAddress, encodeFunctionData, parseUnits } from "viem";
 import { normalize } from "viem/ens";
-import { baseSepolia, mainnet, base } from "viem/chains";
+import { baseSepolia, mainnet, base, arbitrum, arbitrumSepolia } from "viem/chains";
 import { useMultiNetworkAccounts } from "@/hooks/useMultiNetworkAccounts";
 
 import SmartAccountTransaction from "./SmartAccountTransaction";
@@ -13,7 +13,7 @@ import SendAllETH from "./SendAllETH";
 import UserBalance from "./UserBalance";
 import AccountDebug from "./AccountDebug";
 
-type NetworkType = "base" | "base-sepolia";
+type NetworkType = "base" | "base-sepolia" | "arbitrum" | "arbitrum-sepolia";
 
 // Token configurations by network
 const TOKENS_BY_NETWORK = {
@@ -47,6 +47,40 @@ const TOKENS_BY_NETWORK = {
     },
     GHO: {
       name: "GHO",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+  "arbitrum": {
+    USDC: {
+      name: "USDC",
+      address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT",
+      address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" as `0x${string}`,
+      decimals: 6,
+    },
+    ARB: {
+      name: "ARB",
+      address: "0x912CE59144191C1204E64559FE8253a0e49E6548" as `0x${string}`,
+      decimals: 18,
+    },
+  },
+  "arbitrum-sepolia": {
+    USDC: {
+      name: "USDC (Test)",
+      address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" as `0x${string}`,
+      decimals: 6,
+    },
+    USDT: {
+      name: "USDT (Test)",
+      address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      decimals: 6,
+    },
+    ARB: {
+      name: "ARB (Test)",
       address: "0x0000000000000000000000000000000000000000" as `0x${string}`,
       decimals: 18,
     },
@@ -368,6 +402,8 @@ export default function SignedInScreen() {
                 >
                   <option value="base-sepolia">Base Sepolia</option>
                   <option value="base">Base</option>
+                  <option value="arbitrum-sepolia">Arbitrum Sepolia</option>
+                  <option value="arbitrum">Arbitrum</option>
                 </select>
               </div>
 
@@ -589,7 +625,15 @@ export default function SignedInScreen() {
                 }}>
                   ✅ Transaction successful!{' '}
                   <a
-                    href={`${selectedNetwork === "base" ? "https://basescan.org" : "https://sepolia.basescan.org"}/tx/${txData.transactionHash}`}
+                    href={`${
+                      selectedNetwork === "base"
+                        ? "https://basescan.org"
+                        : selectedNetwork === "base-sepolia"
+                        ? "https://sepolia.basescan.org"
+                        : selectedNetwork === "arbitrum"
+                        ? "https://arbiscan.io"
+                        : "https://sepolia.arbiscan.io"
+                    }/tx/${txData.transactionHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ textDecoration: 'underline' }}
