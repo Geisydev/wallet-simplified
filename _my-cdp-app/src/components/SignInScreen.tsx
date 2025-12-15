@@ -1,20 +1,32 @@
 "use client";
 
 import styled from "styled-components";
-import Header from "./Header";
 
 /**
  * Sign in screen
  */
 export default function SignInScreen() {
   return (
-    <MainCard>
-      <h1 className="sr-only">Sign in</h1>
-      <h2>Welcome!</h2>
-      <p>Please sign in to continue.</p>
-    </MainCard>
+    <PageMain>
+      <MainCard>
+        <h1 className="sr-only">Sign in</h1>
+        <CardTitle>Welcome!</CardTitle>
+        <p>Please sign in to continue.</p>
+      </MainCard>
+    </PageMain>
   );
 }
+
+const PageMain = styled.main`
+  padding: 4rem 1rem; /* moved from globals .main */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  @media (max-width: 540px) {
+    padding: 4rem 0.5rem; /* keep the smaller padding on very small screens if needed */
+  }
+`;
 
 const MainCard = styled.main`
   align-items: center;

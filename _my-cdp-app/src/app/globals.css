@@ -132,35 +132,6 @@ hr {
   width: 100%;
 }
 
-
-
-.main {
-  padding: 4rem 0.5rem;
-  width: 100%;
-}
-
-.main-inner {
-  gap: 1rem;
-  width: 100%;
-}
-
-.main-inner>.card {
-  width: 100%;
-}
-
-.smart-badge {
-  background-color: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
-  border-radius: 12px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  display: inline-block;
-}
-
 .smart-account-info {
   background-color: rgba(76, 175, 80, 0.1);
   border: 1px solid rgba(76, 175, 80, 0.3);
@@ -241,82 +212,4 @@ hr {
   padding-left: 2rem;
   padding-right: 2rem;
   min-width: 11.75rem;
-}
-
-.page-heading {
-  font-size: 1.5rem;
-  font-weight: 500;
-  line-height: 1;
-  margin: 0 0 1.5rem;
-}
-
-.page-divider {
-  width: 60%;
-  margin: 4rem 0;
-}
-
-.small-text {
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.transaction-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* @media (min-width: 540px) {
-  .header-inner {
-    flex-direction: row;
-    text-align: left;
-  }
-
-  .user-info {
-    width: auto;
-  }
-
-  .site-title {
-    margin-bottom: 0;
-  }
-
-  .site-title br {
-    display: inline;
-  }
-
-  .main {
-    padding: 4rem 1rem;
-  }
-} */
-
-@media (min-width: 860px) {
-  :root {
-    --cdp-example-card-max-width: 35rem;
-  }
-
-  .main-inner {
-    align-items: stretch;
-    flex-direction: row;
-  }
-}
-
-@media (min-width: 1920px) {
-  :root {
-    --cdp-base-font-size: 20px;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
 }
