@@ -13,7 +13,7 @@ import SendAllETH from "./SendAllETH";
 import UserBalance from "./UserBalance";
 import AccountDebug from "./AccountDebug";
 
-type NetworkType = "base" | "base-sepolia";
+type NetworkType = "base" | "base-sepolia" | "arbitrum" | "arbitrum-sepolia";
 
 const TOKENS_BY_NETWORK = {
   "base": { USDC: { name: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`, decimals: 6 }, USDT: { name: "USDT", address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as `0x${string}`, decimals: 6 }, GHO: { name: "GHO", address: "0x88b1Cd4b430D95b406E382C3cDBaE54697a0286E" as `0x${string}`, decimals: 18 } },
